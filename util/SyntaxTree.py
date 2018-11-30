@@ -14,7 +14,7 @@ class parseTree():
             self.father = None
             self.children = []
             self.tag = None
-            self.span = None
+            self.span = None            
             
     def treeTransform(self):
         root = self.TreeNode()
@@ -73,16 +73,13 @@ class parseTree():
         if _leftmost_id != -1 and _rightmost_id != self.length:
             # looking top-bottom for full-length phrase in _span
             _returned_anc = self.lowest_ancestor(self.tree, _span)
-            _returned_span, _returned_tag = _returned_anc.span, _returned_anc.tag
-            
+            _returned_span, _returned_tag = _returned_anc.span, _returned_anc.tag            
             while self._contains(_span, _returned_span):
-                print(_span, _returned_tag)            
                 if _returned_tag in _tag[0]:
-                    return (_returned_tag, _span)
+                    return (_tag[1], _returned_tag, _span)
                 else:
                     _returned_anc = _returned_anc.father
-                    _returned_span, _returned_tag = _returned_anc.span, _returned_anc.tag
-                    
+                    _returned_span, _returned_tag = _returned_anc.span, _returned_anc.tag                    
             return None
         else:
             # looking bottom-top for phrase adjacent to one side of _span
@@ -101,6 +98,8 @@ class parseTree():
     
     def get_substring(self, span_tuple):
         return self.sentenceAsList[slice(span_tuple[0], span_tuple[1])]
+    def indice_toword(self, indices_list):
+        return [self.sentenceAsList[x] for x in indices_list]
     
     def _match_one_syntax(self, _one_syntax):
         _span = _one_syntax[0]
@@ -136,7 +135,7 @@ class parseTree():
         return _matched_targets        
         
     def match_syntax(self, _syntax):
-        # _syntax should be like: [((-1, 9), ['[NP,1]']), ((9, 14), ['[NP,3]']), ((14, None), ['[NP,2]'])]        
+        # _syntax should be like: [((-1, 9), ['[NP,1]']), ((9, 14), ['[NP,2]']), ((14, None), ['[NP,3]', '[VP,4]'])]        
         # a list of (span, type)
         _matched_all_syntax = []
         for x in _syntax:
@@ -146,14 +145,14 @@ class parseTree():
     def __init__(self, sentence):
         # parsingResult should be a string
         parsingResult = nlp_server.parse(sentence)
-        print(parsingResult)
         assert type(parsingResult) == str
         self.tree = nltk.Tree.fromstring(parsingResult)
         self.tree = self.treeTransform()
         self.leaves = self.getLeaves(self.tree, 0)
         self.length = len(self.leaves)
-        self.sentenceAsList = [x.tag for x in self.leaves] # should be the same with corenlp tokenization result
+        self.sentenceAsList = [x.tag for x in self.leaves] # should be same with corenlp tokenized result
         self.sentenceAsString = ' '.join(self.sentenceAsList)
+        
         
         
 def check_words_equal(list_1, list_2):
@@ -198,7 +197,6 @@ def match_all(_parseTree, _toBeMatched):
         for _idy, y in enumerate(_target):
             _target[_idy] = y.upper()            
         _syn_to_pass.append((_span, _target))
-    print(_syn_to_pass)
     return _parseTree.match_syntax(_syn_to_pass)
 
 def matchPattern(sentence, pattern):
@@ -214,11 +212,16 @@ def matchPattern(sentence, pattern):
     for i in range(1, min(6, len(sentence))):
         skip_grams += skipgrams(sentence, i, min(i, len(sentence)))
         
-    matched = []
+    matched = None
     for skg in skip_grams:
         if check_words_equal([x[1] for x in skg], pattern_word_set):
             pat = search_pattern(pattern, skg)
             # pat should be something like [((-1, 2), ['[np,1]']), ((3, None), ['[rb,2]', '[jj,3]', '[sbar/vp,4]'])]
-            matched.append(match_all(myParseTree, pat))
-            
-    return matched
+            matched = match_all(myParseTree, pat)
+            break
+    
+    _toret = []
+    for chunk in matched:
+        for piece in chunk:
+            _toret.append((piece[0], piece[1], myParseTree.get_substring(piece[2])))
+    return _toret
