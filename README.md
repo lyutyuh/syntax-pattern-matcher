@@ -15,7 +15,7 @@ The tags should conform to Penn Treebank tags, which are explained in the [refer
 ## Running samples:
 
 ```python
-
+>>> from util import SyntaxTree
 >>> example_sentence = 'Some cats are certainly difficult to deal with.'
 >>> example_syntax_pattern = ['[np,1]', 'are', 'certainly', 'difficult','[to,3]', '[vp,4]']
 >>> print(SyntaxTree.matchPattern(example_sentence, example_syntax_pattern))
@@ -23,6 +23,7 @@ The tags should conform to Penn Treebank tags, which are explained in the [refer
 ```
 
 ```python
+>>> from util import SyntaxTree
 >>> example_sentence = 'Dogs like eating sandwiches for breakfast.'
 >>> example_syntax_pattern = ['[np,1]', 'like', 'eating', '[np,2]','[pp,3]']
 >>> print(SyntaxTree.matchPattern(example_sentence, example_syntax_pattern))
